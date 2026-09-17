@@ -205,8 +205,6 @@ Do not investigate or attempt to fix these — they are expected preview limitat
 - **Site:** `https://www.example.com/` — Brilliant Directories membership site
 - **Client:** Non-technical — expects plain-language guidance, not widget IDs or API terminology
 
-### Widget Notes
-
 ---
 
 ## Quick Reference: MCP Tools
