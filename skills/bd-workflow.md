@@ -207,10 +207,6 @@ Do not investigate or attempt to fix these — they are expected preview limitat
 
 ### Widget Notes
 
-- **Bootstrap Theme Framework** (id: 17) — site-wide header/nav/footer. Nav bar appears white-on-white in preview (known preview limitation — looks correct on live site).
-- **Partner Orgs Banner 2026** (id: 209) — queries BD database for partner org records. Shows "unavailable" in local preview because the render API doesn't provide database context. Works fine on the live site.
-- **Referral Codes Explainer Sign Up** (id: 28) — static content widget, renders correctly in local preview. About referral codes, designated recipients, sector development fund.
-
 ---
 
 ## Quick Reference: MCP Tools
@@ -225,3 +221,28 @@ render_widget(widget_name)                   → Build preview from local worksp
 ```
 
 The MCP server handles all content as form-encoded form-data. No manual curl requests needed.
+
+---
+
+## BD Database Facts
+
+- **Active account flag**: `users_data.active = 2` = fully Active. Any other value = inactive/cancelled/etc. Do NOT use `account_status` for active detection — unreliable.
+- **Parent/sub-account hierarchy**: `users_data.parent_id = 0` = main account; `!= 0` = sub-account. To query all records for parent + sub-accounts: `SELECT user_id FROM users_data WHERE parent_id = '$userId' UNION SELECT '$userId' AS user_id`.
+- **Favourites table**: `users_favorite` — columns: `userId` (who saved), `ownerId` (vendor), `dataType` (10 = member listing).
+- **Do NOT join `users_data` with a `users` table** — that table name doesn't exist in BD and silently returns empty rows for every query, breaking all output.
+
+---
+
+## JS in Widgets — Backslash Escape Stripping
+
+**CRITICAL**: BD widget storage strips JavaScript backslash escape sequences on save. `'\r\n'` becomes `'rn'`, `'\ufeff'` becomes `'ufeff'`. This breaks CSV downloads and any string using escape sequences.
+
+Always use `String.fromCharCode()` instead:
+- CRLF: `String.fromCharCode(13, 10)`
+- UTF-8 BOM: `String.fromCharCode(65279)`
+
+---
+
+## BD Base Theme Overrides
+
+- **`.bookmark-number`**: BD's base theme applies `position: absolute` to this class. To keep it inline inside a button, override: `position: static !important; top: auto !important; right: auto !important; width: auto !important`.

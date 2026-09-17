@@ -16,6 +16,7 @@ Thumbs.db
 # Widget render previews and edit workspace (throwaway files)
 previews/
 workspace/
+snapshots/
 
 # Debug/test scripts
 test-render*.ps1
