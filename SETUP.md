@@ -37,15 +37,33 @@ Claude will automatically test the connection. You should see your widgets liste
 
 ---
 
-## Optional: `BD_PROJECT_ROOT`
+## Multiple sites on one computer: `--project-root` and `.env`
 
-If set, widget files and snapshots are stored under that directory (usually your app repo root). Example: point it at the folder that contains `workspace/` so backups and edits live next to your Git project.
+Global environment variables only hold one site's credentials. To manage several sites, give each project folder its own `.env` file and tell the MCP which folder to use.
 
-```powershell
-[System.Environment]::SetEnvironmentVariable("BD_PROJECT_ROOT", "C:\path\to\EML Website", "User")
+1. In each site's project folder, copy `.env.example` to `.env` and fill in that site's `BD_API_KEY` and `BD_SITE_URL`.
+2. In that folder's `.mcp.json`, pass the folder with `--project-root`:
+
+```json
+{
+  "mcpServers": {
+    "Brilliant Directories Widgets MCP": {
+      "command": "node",
+      "args": ["C:\\path\\to\\Brilliant-Directories-MCP\\mcp-server\\index.js", "--project-root", "C:\\path\\to\\Site A"]
+    }
+  }
+}
 ```
 
-Restart the IDE after changing it.
+The project root decides where `workspace/`, `snapshots/` and `previews/` live, and which `.env` is loaded. Values in the project's `.env` override global environment variables. The MCP logs the project root and site URL it connected to at startup.
+
+**How the project root is chosen** (first match wins):
+
+1. `--project-root <path>` argument (relative paths resolve from the folder Claude Code starts the server in)
+2. `BD_PROJECT_ROOT` environment variable
+3. The folder above `mcp-server/` (this repo)
+
+Restart Claude Code after changing `.mcp.json` or `.env`.
 
 ---
 
@@ -77,7 +95,8 @@ This stops assistants from silently wiping local widget work.
 
 ## Troubleshooting
 
-**"BD_API_KEY and BD_SITE_URL environment variables must be set"**
+**"BD_API_KEY and BD_SITE_URL must be set in ... .env or as environment variables"**
+- The message shows which `.env` path it looked for — check that file exists and has both values
 - Close Claude Code completely and reopen it
 - Verify the environment variables are set: open PowerShell and run `$env:BD_API_KEY` — you should see your key
 

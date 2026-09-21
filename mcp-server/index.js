@@ -7,14 +7,27 @@ import http from 'http';
 import path from 'path';
 import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
+import { parseEnv } from 'util';
 
 const MCP_DIR = path.dirname(fileURLToPath(import.meta.url));
 const LEGACY_PROJECT_ROOT = path.resolve(MCP_DIR, '..');
 
+/** Value of `--project-root <path>` or `--project-root=<path>`, or null. */
+function projectRootArg() {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--project-root') return args[i + 1] ?? null;
+    if (args[i].startsWith('--project-root=')) return args[i].slice('--project-root='.length);
+  }
+  return null;
+}
+
+/** Precedence: --project-root arg > BD_PROJECT_ROOT env > folder above mcp-server/. */
 function resolveProjectRoot() {
-  const raw = process.env.BD_PROJECT_ROOT;
-  if (raw != null && String(raw).trim() !== '') {
-    return path.resolve(process.cwd(), raw);
+  for (const raw of [projectRootArg(), process.env.BD_PROJECT_ROOT]) {
+    if (raw != null && String(raw).trim() !== '') {
+      return path.resolve(process.cwd(), raw);
+    }
   }
   return LEGACY_PROJECT_ROOT;
 }
@@ -24,13 +37,20 @@ const PREVIEWS_DIR  = path.join(PROJECT_ROOT, 'previews');
 const WORKSPACE_DIR = path.join(PROJECT_ROOT, 'workspace');
 const SNAPSHOTS_DIR = path.join(PROJECT_ROOT, 'snapshots');
 
+// Project-local .env overrides global env vars so each site folder uses its own credentials.
+const ENV_FILE = path.join(PROJECT_ROOT, '.env');
+if (fs.existsSync(ENV_FILE)) {
+  Object.assign(process.env, parseEnv(fs.readFileSync(ENV_FILE, 'utf8')));
+}
+
 const API_KEY  = process.env.BD_API_KEY;
 const SITE_URL = process.env.BD_SITE_URL?.replace(/\/$/, '');
 
 if (!API_KEY || !SITE_URL) {
-  console.error('Error: BD_API_KEY and BD_SITE_URL environment variables must be set.');
+  console.error(`Error: BD_API_KEY and BD_SITE_URL must be set in ${ENV_FILE} or as environment variables.`);
   process.exit(1);
 }
+console.error(`BD MCP: project root ${PROJECT_ROOT}, site ${SITE_URL}`);
 
 const BASE_URL = `${SITE_URL}/api/v2`;
 
