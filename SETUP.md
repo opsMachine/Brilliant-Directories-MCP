@@ -42,18 +42,31 @@ Claude will automatically test the connection. You should see your widgets liste
 Global environment variables only hold one site's credentials. To manage several sites, give each project folder its own `.env` file and tell the MCP which folder to use.
 
 1. In each site's project folder, copy `.env.example` to `.env` and fill in that site's `BD_API_KEY` and `BD_SITE_URL`.
-2. In that folder's `.mcp.json`, pass the folder with `--project-root`:
+2. In that folder's `.mcp.json`, point `args` at the real checkout of this repo and pass the project folder with `--project-root`:
 
 ```json
 {
   "mcpServers": {
     "Brilliant Directories Widgets MCP": {
       "command": "node",
-      "args": ["C:\\path\\to\\Brilliant-Directories-MCP\\mcp-server\\index.js", "--project-root", "C:\\path\\to\\Site A"]
+      "args": [
+        "C:\\path\\to\\Brilliant-Directories-MCP\\mcp-server\\index.js",
+        "--project-root",
+        "${CLAUDE_PROJECT_DIR:-.}"
+      ]
     }
   }
 }
 ```
+
+`${CLAUDE_PROJECT_DIR:-.}` means "the project folder Claude Code is open in", falling back to `.` (the folder the server is started in, which is also the project folder). The same `.mcp.json` works for every site; only the server path is machine-specific.
+
+**Windows: don't point `args` at a symlink.** If your site repo keeps a symlink to this checkout (e.g. `Brilliant Directories MCP/` → this folder), do not reference the server through it in `.mcp.json`. Running `mcp-server/index.js` via a symlinked path silently exits immediately — exit code 0, no output, no error, nothing to debug. Use the real checkout path instead:
+
+- ✅ `"C:\\path\\to\\Brilliant-Directories-MCP\\mcp-server\\index.js"` (real checkout)
+- ❌ `"C:\\path\\to\\Site A\\Brilliant Directories MCP\\mcp-server\\index.js"` (through the symlink)
+
+A symlink is still fine for read-only browsing/reference — just never as the execution path. Quick check: if the MCP log doesn't show the `BD MCP: project root ..., site ...` startup line, the script never actually ran.
 
 The project root decides where `workspace/`, `snapshots/` and `previews/` live, and which `.env` is loaded. Values in the project's `.env` override global environment variables. The MCP logs the project root and site URL it connected to at startup.
 

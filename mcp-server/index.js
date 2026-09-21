@@ -141,6 +141,16 @@ let previewServer = null;
 let lastRenderTime = 0;
 const openedPreviews = new Set();
 
+/** Open a URL in the user's default browser (Windows, macOS, Linux). */
+function openInBrowser(url) {
+  const cmd = process.platform === 'win32'  ? `start "" "${url}"`
+            : process.platform === 'darwin' ? `open "${url}"`
+            : `xdg-open "${url}"`;
+  exec(cmd, err => {
+    if (err) console.error(`BD MCP: could not open browser (${err.message}). Preview: ${url}`);
+  });
+}
+
 function ensurePreviewServer() {
   if (previewServer) return;
   previewServer = http.createServer((req, res) => {
@@ -487,7 +497,7 @@ ${reloadScript}
         const isNew = !openedPreviews.has(args.widget_name);
         if (isNew) {
           openedPreviews.add(args.widget_name);
-          exec(`start "" "${url}"`);
+          openInBrowser(url);
         }
 
         return {
